@@ -90,7 +90,10 @@ export interface Education {
   gpa?: string;
   description?: string;
   visible?: boolean;
+  location?: string;
+  tags?: string[];
 }
+
 
 export interface Experience {
   id: string;
@@ -99,7 +102,10 @@ export interface Experience {
   date: string;
   details: string;
   visible?: boolean;
+  location?: string;
+  tags?: string[];
 }
+
 
 export interface Skill {
   id: string;
@@ -115,7 +121,9 @@ export interface Project {
   description: string;
   visible: boolean;
   link?: string;
+  tags?: string[];
 }
+
 
 export interface Certificate {
   id: string;
@@ -152,7 +160,9 @@ export interface CustomItem {
   dateRange: string;
   description: string;
   visible: boolean;
+  tags?: string[];
 }
+
 
 export const THEME_COLORS = [
   "#000000",

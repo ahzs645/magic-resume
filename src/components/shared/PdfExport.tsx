@@ -5,7 +5,9 @@ import {
   Loader2,
   FileJson,
   Printer,
-  ChevronDown
+  ChevronDown,
+  FileText,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useResumeStore } from "@/store/useResumeStore";
@@ -13,19 +15,25 @@ import { Button } from "@/components/ui/button";
 import { exportToPdf } from "@/utils/export";
 import { exportResumeToBrowserPrint } from "@/utils/print";
 import {
+  importRenderCVYaml,
+  exportToRenderCVYaml,
+} from "@/utils/yamlConverter";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 const PdfExport = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingJson, setIsExportingJson] = useState(false);
-  const { activeResume } = useResumeStore();
+  const { activeResume, updateResume } = useResumeStore();
   const { globalSettings = {}, title } = activeResume || {};
   const t = useTranslations("pdfExport");
   const printFrameRef = useRef<HTMLIFrameElement>(null);
+  const yamlInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
     await exportToPdf({
@@ -36,7 +44,7 @@ const PdfExport = () => {
       onStart: () => setIsExporting(true),
       onEnd: () => setIsExporting(false),
       successMessage: t("toast.success"),
-      errorMessage: t("toast.error")
+      errorMessage: t("toast.error"),
     });
   };
 
@@ -65,6 +73,62 @@ const PdfExport = () => {
     }
   };
 
+  const handleYamlExport = () => {
+    try {
+      if (!activeResume) {
+        throw new Error("No active resume");
+      }
+
+      const yamlStr = exportToRenderCVYaml(activeResume);
+      const blob = new Blob([yamlStr], { type: "text/yaml" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `CV.yaml`;
+      link.click();
+
+      window.URL.revokeObjectURL(url);
+      toast.success("YAML exported successfully");
+    } catch (error) {
+      console.error("YAML export error:", error);
+      toast.error("Failed to export YAML");
+    }
+  };
+
+  const handleYamlImport = () => {
+    yamlInputRef.current?.click();
+  };
+
+  const handleYamlFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeResume) return;
+
+    try {
+      const text = await file.text();
+      const imported = importRenderCVYaml(text);
+
+      // Merge imported data into active resume
+      updateResume(activeResume.id, {
+        ...imported,
+        title: activeResume.title, // keep existing title
+      });
+
+      toast.success("RenderCV YAML imported successfully");
+    } catch (error) {
+      console.error("YAML import error:", error);
+      toast.error(
+        `Failed to import YAML: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+
+    // Reset input
+    if (yamlInputRef.current) {
+      yamlInputRef.current.value = "";
+    }
+  };
+
   const handlePrint = async () => {
     const resumeContent = document.getElementById("resume-preview");
     if (!resumeContent) {
@@ -89,6 +153,15 @@ const PdfExport = () => {
 
   return (
     <>
+      {/* Hidden file input for YAML import */}
+      <input
+        ref={yamlInputRef}
+        type="file"
+        accept=".yaml,.yml"
+        style={{ display: "none" }}
+        onChange={handleYamlFileChange}
+      />
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -122,6 +195,15 @@ const PdfExport = () => {
           <DropdownMenuItem onClick={handleJsonExport} disabled={isLoading}>
             <FileJson className="w-4 h-4 mr-2" />
             {t("button.exportJson")}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleYamlExport} disabled={isLoading}>
+            <FileText className="w-4 h-4 mr-2" />
+            Export YAML (RenderCV)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleYamlImport} disabled={isLoading}>
+            <Upload className="w-4 h-4 mr-2" />
+            Import YAML (RenderCV)
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

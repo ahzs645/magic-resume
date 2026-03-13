@@ -17,6 +17,39 @@ export const DEFAULT_FONT_FAMILY = "\"Alibaba PuHuiTi\", sans-serif";
 
 const FONT_DEFINITIONS: FontDefinition[] = [
   {
+    labelKey: "ebgaramond",
+    value: "\"EB Garamond\", Georgia, serif",
+    aliases: [
+      "EB Garamond, Georgia, serif",
+      "\"EB Garamond\", Georgia, serif",
+      "EB Garamond, serif",
+      "\"EB Garamond\", serif"
+    ],
+    sources: [
+      {
+        family: "EB Garamond",
+        url: "https://fonts.gstatic.com/s/ebgaramond/v27/SlGDmQSNjdsmc35JDF1K5E55YMjF_7DPuGi-6_RUA4V-e6yHgQ.woff2",
+        format: "woff2",
+        weight: "400",
+        style: "normal"
+      },
+      {
+        family: "EB Garamond",
+        url: "https://fonts.gstatic.com/s/ebgaramond/v27/SlGDmQSNjdsmc35JDF1K5E55YMjF_7DPuGi-2fRUA4V-e6yHgQ.woff2",
+        format: "woff2",
+        weight: "700",
+        style: "normal"
+      },
+      {
+        family: "EB Garamond",
+        url: "https://fonts.gstatic.com/s/ebgaramond/v27/SlGFmQSNjdsmc35JDF1K5GRwUjcdlttViGpIaGcNMXvRYPhbmQ.woff2",
+        format: "woff2",
+        weight: "400",
+        style: "italic"
+      }
+    ]
+  },
+  {
     labelKey: "alibaba",
     value: DEFAULT_FONT_FAMILY,
     aliases: [

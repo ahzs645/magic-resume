@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "@/lib/navigation";
 import { Input } from "@/components/ui/input";
 import PdfExport from "../shared/PdfExport";
+import VariantSelector from "../shared/VariantSelector";
 import ThemeToggle from "../shared/ThemeToggle";
 import { useResumeStore } from "@/store/useResumeStore";
 import { getThemeConfig } from "@/theme/themeConfig";
@@ -75,6 +76,9 @@ export function EditorHeader({ isMobile }: EditorHeaderProps) {
             placeholder="简历名称"
           />
 
+          <div className="hidden md:block">
+            <VariantSelector />
+          </div>
           <ThemeToggle></ThemeToggle>
           <div className="md:flex items-center ">
             <PdfExport />

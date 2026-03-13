@@ -256,6 +256,30 @@
   margin-right: 5px;
 } */
 
+/* ── Ahmad Style template bullet overrides ── */
+.ahmad-style-template .ahmad-highlights ul {
+  list-style: none;
+  padding-left: 1em;
+  margin: 0;
+}
+.ahmad-style-template .ahmad-highlights ul li {
+  position: relative;
+  padding-left: 0;
+  margin-bottom: 1pt;
+}
+.ahmad-style-template .ahmad-highlights ul li::before {
+  content: "\2022"; /* • bullet */
+  position: absolute;
+  left: -1em;
+}
+.ahmad-style-template .ahmad-highlights ol {
+  padding-left: 1em;
+  margin: 0;
+}
+.ahmad-style-template .ahmad-highlights p {
+  margin: 0;
+}
+
 .custom-list {
   list-style-type: disc;
   padding-left: 1.2rem;
