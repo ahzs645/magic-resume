@@ -27,6 +27,7 @@ import {
     createResumeFromAIResult,
     toStringArray
 } from "./utils";
+import { importRenderCVYaml } from "@/utils/yamlConverter";
 import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 
 const MAX_PDF_IMPORT_PAGES = 3;
@@ -55,6 +56,7 @@ export const ResumeWorkbench = () => {
     const [isImporting, setIsImporting] = useState(false);
     const jsonFileInputRef = useRef<HTMLInputElement>(null);
     const pdfFileInputRef = useRef<HTMLInputElement>(null);
+    const yamlFileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const syncResumesFromFiles = async () => {
@@ -294,6 +296,45 @@ export const ResumeWorkbench = () => {
         }
     };
 
+    const handleYamlFileChange = async (
+        event: React.ChangeEvent<HTMLInputElement>
+    ) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        if (!file || isImporting) return;
+
+        try {
+            setIsImporting(true);
+            const text = await file.text();
+            const imported = importRenderCVYaml(text);
+            const now = new Date().toISOString();
+            const { generateUUID } = await import("@/utils/uuid");
+            const { initialResumeState } = await import("@/config/initialResumeData");
+
+            const nameWithoutExt = file.name.replace(/\.[^.]+$/, "").trim();
+            const newResume = {
+                ...initialResumeState,
+                ...imported,
+                id: generateUUID(),
+                title: nameWithoutExt || "Imported Resume",
+                createdAt: now,
+                updatedAt: now,
+            };
+            const resumeId = addResume(newResume);
+            setActiveResume(resumeId);
+            setIsImportDialogOpen(false);
+            toast.success("RenderCV YAML imported successfully");
+            router.push(`/app/workbench/${resumeId}`);
+        } catch (error) {
+            console.error("Import YAML error:", error);
+            toast.error(
+                `Failed to import YAML: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
+        } finally {
+            setIsImporting(false);
+        }
+    };
+
     return (
         <ScrollArea className="h-[calc(100vh-2rem)] w-full">
             <motion.div
@@ -457,8 +498,10 @@ export const ResumeWorkbench = () => {
                     onOpenChange={setIsImportDialogOpen}
                     jsonFileInputRef={jsonFileInputRef}
                     pdfFileInputRef={pdfFileInputRef}
+                    yamlFileInputRef={yamlFileInputRef}
                     onJsonFileChange={handleJsonFileChange}
                     onPdfFileChange={handlePdfFileChange}
+                    onYamlFileChange={handleYamlFileChange}
                 />
             </motion.div>
         </ScrollArea>

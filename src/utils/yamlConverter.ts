@@ -48,10 +48,18 @@ interface RenderCVYaml {
   };
 }
 
+interface RenderCVPositionEntry {
+  title: string;
+  start_date?: string;
+  end_date?: string;
+  date?: string;
+  highlights?: string[];
+}
+
 interface RenderCVExperienceEntry {
   company: string;
   position?: string;
-  positions?: string[];
+  positions?: (string | RenderCVPositionEntry)[];
   start_date?: string;
   end_date?: string;
   date?: string;
@@ -77,7 +85,8 @@ interface RenderCVEducationEntry {
 }
 
 interface RenderCVNormalEntry {
-  name: string;
+  name?: string;
+  title?: string;
   start_date?: string;
   end_date?: string;
   date?: string;
@@ -146,7 +155,7 @@ function isEducationEntry(entry: RenderCVEntry): entry is RenderCVEducationEntry
 }
 
 function isNormalEntry(entry: RenderCVEntry): entry is RenderCVNormalEntry {
-  return typeof entry === "object" && "name" in entry && !("company" in entry) && !("institution" in entry);
+  return typeof entry === "object" && ("name" in entry || "title" in entry) && !("company" in entry) && !("institution" in entry) && !("label" in entry && "details" in entry);
 }
 
 function isOneLineEntry(entry: RenderCVEntry): entry is RenderCVOneLineEntry {
@@ -258,18 +267,41 @@ export function importRenderCVYaml(yamlContent: string): Partial<ResumeData> {
         case "experience": {
           for (const entry of entries) {
             if (isExperienceEntry(entry)) {
-              // Handle positions array (multiple roles at same company)
-              const positions = entry.positions
-                ? entry.positions
-                : entry.position
-                  ? [entry.position]
-                  : [""];
-
-              for (const pos of positions) {
+              if (entry.positions && entry.positions.length > 0) {
+                // Handle positions array (multiple roles at same company)
+                for (const pos of entry.positions) {
+                  if (typeof pos === "object" && pos.title) {
+                    // Position object: {title, start_date, end_date, highlights}
+                    experience.push({
+                      id: uuidv4(),
+                      company: entry.company,
+                      position: pos.title,
+                      date: pos.date || formatDateRange(pos.start_date, pos.end_date),
+                      details: highlightsToHtml(pos.highlights),
+                      visible: true,
+                      location: entry.location,
+                      tags: entry.tags,
+                    });
+                  } else {
+                    // Simple string position
+                    experience.push({
+                      id: uuidv4(),
+                      company: entry.company,
+                      position: String(pos),
+                      date: entry.date || formatDateRange(entry.start_date, entry.end_date),
+                      details: highlightsToHtml(entry.highlights),
+                      visible: true,
+                      location: entry.location,
+                      tags: entry.tags,
+                    });
+                  }
+                }
+              } else {
+                // Single position
                 experience.push({
                   id: uuidv4(),
                   company: entry.company,
-                  position: pos,
+                  position: entry.position || "",
                   date: entry.date || formatDateRange(entry.start_date, entry.end_date),
                   details: highlightsToHtml(entry.highlights),
                   visible: true,
@@ -277,15 +309,29 @@ export function importRenderCVYaml(yamlContent: string): Partial<ResumeData> {
                   tags: entry.tags,
                 });
               }
+            } else if (isNormalEntry(entry)) {
+              // Fallback: entries with title/name but no company (non-standard YAML)
+              experience.push({
+                id: uuidv4(),
+                company: entry.name || entry.title || "",
+                position: "",
+                date: entry.date || formatDateRange(entry.start_date, entry.end_date),
+                details: highlightsToHtml(entry.highlights) || entry.summary || "",
+                visible: true,
+                location: entry.location,
+                tags: entry.tags,
+              });
             }
           }
-          menuSections.push({
-            id: "experience",
-            title: prettyTitle,
-            icon: "Briefcase",
-            enabled: true,
-            order: sectionOrder++,
-          });
+          if (!menuSections.some((s) => s.id === "experience")) {
+            menuSections.push({
+              id: "experience",
+              title: prettyTitle,
+              icon: "Briefcase",
+              enabled: true,
+              order: sectionOrder++,
+            });
+          }
           break;
         }
 
@@ -307,13 +353,15 @@ export function importRenderCVYaml(yamlContent: string): Partial<ResumeData> {
               });
             }
           }
-          menuSections.push({
-            id: "education",
-            title: prettyTitle,
-            icon: "GraduationCap",
-            enabled: true,
-            order: sectionOrder++,
-          });
+          if (!menuSections.some((s) => s.id === "education")) {
+            menuSections.push({
+              id: "education",
+              title: prettyTitle,
+              icon: "GraduationCap",
+              enabled: true,
+              order: sectionOrder++,
+            });
+          }
           break;
         }
 
@@ -322,7 +370,7 @@ export function importRenderCVYaml(yamlContent: string): Partial<ResumeData> {
             if (isNormalEntry(entry)) {
               projects.push({
                 id: uuidv4(),
-                name: entry.name,
+                name: entry.name || entry.title || "",
                 role: "",
                 date: entry.date || formatDateRange(entry.start_date, entry.end_date),
                 description: highlightsToHtml(entry.highlights) || entry.summary || "",
@@ -332,13 +380,15 @@ export function importRenderCVYaml(yamlContent: string): Partial<ResumeData> {
               });
             }
           }
-          menuSections.push({
-            id: "projects",
-            title: prettyTitle,
-            icon: "FolderOpen",
-            enabled: true,
-            order: sectionOrder++,
-          });
+          if (!menuSections.some((s) => s.id === "projects")) {
+            menuSections.push({
+              id: "projects",
+              title: prettyTitle,
+              icon: "FolderOpen",
+              enabled: true,
+              order: sectionOrder++,
+            });
+          }
           break;
         }
 
@@ -352,17 +402,19 @@ export function importRenderCVYaml(yamlContent: string): Partial<ResumeData> {
               lines.push(`<strong>${entry.label}:</strong> ${entry.details}`);
             } else if (isNormalEntry(entry)) {
               const desc = entry.highlights?.join(", ") || "";
-              lines.push(`<strong>${entry.name}:</strong> ${desc}`);
+              lines.push(`<strong>${entry.name || entry.title}:</strong> ${desc}`);
             }
           }
           skillContent = lines.map((l) => `<p>${l}</p>`).join("");
-          menuSections.push({
-            id: "skills",
-            title: prettyTitle,
-            icon: "Wrench",
-            enabled: true,
-            order: sectionOrder++,
-          });
+          if (!menuSections.some((s) => s.id === "skills")) {
+            menuSections.push({
+              id: "skills",
+              title: prettyTitle,
+              icon: "Wrench",
+              enabled: true,
+              order: sectionOrder++,
+            });
+          }
           break;
         }
 
@@ -393,7 +445,7 @@ export function importRenderCVYaml(yamlContent: string): Partial<ResumeData> {
             } else if (isNormalEntry(entry)) {
               items.push({
                 id: uuidv4(),
-                title: entry.name,
+                title: entry.name || entry.title || "",
                 subtitle: "",
                 dateRange: entry.date || formatDateRange(entry.start_date, entry.end_date),
                 description: highlightsToHtml(entry.highlights) || entry.summary || "",

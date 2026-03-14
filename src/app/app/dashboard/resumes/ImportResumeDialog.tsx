@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslations } from "@/i18n/compat/client";
-import { Braces, Loader2 } from "lucide-react";
+import { Braces, FileText, Loader2 } from "lucide-react";
 import { PdfIcon } from "@/components/shared/icons/PdfIcon";
 import { cn } from "@/lib/utils";
 import {
@@ -18,8 +18,10 @@ interface ImportResumeDialogProps {
   onOpenChange: (open: boolean) => void;
   jsonFileInputRef: React.RefObject<HTMLInputElement>;
   pdfFileInputRef: React.RefObject<HTMLInputElement>;
+  yamlFileInputRef: React.RefObject<HTMLInputElement>;
   onJsonFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onPdfFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onYamlFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const ImportResumeDialog = ({
@@ -28,8 +30,10 @@ export const ImportResumeDialog = ({
   onOpenChange,
   jsonFileInputRef,
   pdfFileInputRef,
+  yamlFileInputRef,
   onJsonFileChange,
   onPdfFileChange,
+  onYamlFileChange,
 }: ImportResumeDialogProps) => {
   const t = useTranslations();
 
@@ -48,6 +52,13 @@ export const ImportResumeDialog = ({
         accept=".pdf,application/pdf"
         className="hidden"
         onChange={onPdfFileChange}
+      />
+      <input
+        ref={yamlFileInputRef}
+        type="file"
+        accept=".yaml,.yml"
+        className="hidden"
+        onChange={onYamlFileChange}
       />
 
       <Dialog
@@ -109,6 +120,30 @@ export const ImportResumeDialog = ({
                 </p>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {t("dashboard.resumes.importDialog.pdfDescription")}
+                </p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              disabled={isImporting}
+              className={cn(
+                "group relative flex w-full items-start gap-4 rounded-xl border border-border/50 bg-card p-4 text-left transition-all duration-200",
+                "hover:border-primary/50 hover:bg-accent/50 hover:shadow-md",
+                "active:scale-[0.98]",
+                "disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
+              )}
+              onClick={() => yamlFileInputRef.current?.click()}
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 transition-colors group-hover:bg-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400">
+                <FileText className="h-6 w-6" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <p className="font-semibold text-foreground leading-none">
+                  Import YAML
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Import a RenderCV YAML file (.yaml, .yml)
                 </p>
               </div>
             </button>
